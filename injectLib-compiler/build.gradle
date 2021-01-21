@@ -1,0 +1,17 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    compileOnly 'net.ltgt.gradle.incap:incap:0.3'
+    annotationProcessor 'net.ltgt.gradle.incap:incap-processor:0.3'
+
+    compileOnly 'com.google.auto.service:auto-service:1.0-rc6'
+    annotationProcessor 'com.google.auto.service:auto-service:1.0-rc6'
+    // 用于帮助我们通过类调用的形式来生成Java代码
+    implementation 'com.squareup:javapoet:1.10.0'
+    implementation project(':inject-annotations')
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"

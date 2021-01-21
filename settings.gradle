@@ -1,0 +1,5 @@
+include ':library'
+include ':inject-annotations'
+include ':injectLib-compiler'
+include ':app'
+rootProject.name = "ParamInject"

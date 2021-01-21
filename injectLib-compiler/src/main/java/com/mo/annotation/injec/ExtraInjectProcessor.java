@@ -102,7 +102,8 @@ public class ExtraInjectProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
-        Set<? extends Element> sets = roundEnvironment.getElementsAnnotatedWith(ParamInject.class); // 拿到所有是使用 ParamInject 注解的字段
+        // 拿到所有是使用 ParamInject 注解的字段
+        Set<? extends Element> sets = roundEnvironment.getElementsAnnotatedWith(ParamInject.class);
         if (sets.isEmpty()) {
             // 只处理 ParamInject注解
             return false;
@@ -115,7 +116,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
             // 创建构造方法
             MethodSpec.Builder constructorSpecBuilder = makeConstructor(typeElement);
             // 生成注入代码
-//            buildConstructorCode(constructorSpecBuilder, groups.get(typeElement));
+            buildConstructorCode(constructorSpecBuilder, groups.get(typeElement));
             // 给类添加构造方法
             typeSpecBuilder.addMethod(constructorSpecBuilder.build());
             // 输出 Java 文件
@@ -179,11 +180,12 @@ public class ExtraInjectProcessor extends AbstractProcessor {
             // 获取属性名
             String fieldName = item.toString();
             if (paramKey == null || "".equals(paramKey)) {
-                paramKey = fieldName; // 使用默认值
+                paramKey = fieldName;
+                // 使用默认值
             }
             statementBuilder.append("target.").append(fieldName).append(" = ").append(" target.getIntent().get");
 
-            // 属性类型
+            //属性类型
             TypeMirror fieldTypeMirror = item.asType();
             TypeName typeName = ClassName.get(fieldTypeMirror);
             if (typeName.isPrimitive()) {
@@ -208,6 +210,8 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                         break;
                     case BYTE:
                         statementBuilder.append((byte) 0);
+                        break;
+                    default:
                         break;
                 }
                 statementBuilder.append(")");

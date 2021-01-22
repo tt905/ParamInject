@@ -3,6 +3,7 @@ package com.mo.annotation.app;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,6 +38,6 @@ public class ParamActivity extends AppCompatActivity {
 //        param1 = getIntent().getStringExtra("myParam");
 //        param1 = getIntent().getParcelableExtra()
 //        userModel = getIntent().getParcelableExtra("userModel");
-//        Log.d("MLog", "param1:" + param1 + " param2:" + param2 + " userModel.name:"+ this.userModel.name);
+        Log.d("MLog", "param1:" + param1 + " param2:" + param2 + " userModel.name:" + this.userModel.name);
     }
 }

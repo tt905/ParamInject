@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -31,13 +32,10 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-
-import static javax.lang.model.type.TypeKind.*;
 
 // 这个注解的作用是用来生成 META-INF/javax.annotation.processing.Processor 这个文件，文件里就是
 // 注解处理器的全路径，这个文件会被 ServiceLoader 类使用，用于加载注解服务。
@@ -49,19 +47,6 @@ import static javax.lang.model.type.TypeKind.*;
 // @SupportedAnnotationTypes({ProcessorConstants.BINDVIEW_FULLNAME})
 // 模块名 , 存放生成的 APT 文件的包名
 // @SupportedOptions({ProcessorConstants.MODULE_NAME, ProcessorConstants.PACKAGENAME_FOR_APT})
-/**
- * 例子
- *  package com.jennifer.andy.aptdemo.domain;//PackageElement
- * class Person {//TypeElement
- *     private String where;//VariableElement
- *
- *     public void doSomething() { }//ExecutableElement
- *
- *     public void run() {//ExecutableElement
- *         int runTime;//VariableElement
- *     }
- * }
- */
 public class ExtraInjectProcessor extends AbstractProcessor {
 
     /**
@@ -94,35 +79,34 @@ public class ExtraInjectProcessor extends AbstractProcessor {
         return supportTypes;
     }
 
-//    @Override
-//    public Set<String> getSupportedOptions() {
-//        // 增量编译
-//        return Collections.singleton(IncrementalAnnotationProcessorType.ISOLATING.getProcessorOption());
-//    }
-
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         // 拿到所有是使用 ParamInject 注解的字段
         Set<? extends Element> sets = roundEnvironment.getElementsAnnotatedWith(ParamInject.class);
         if (sets.isEmpty()) {
-            // 只处理 ParamInject注解
+            // 只处理 ParamInject 注解
             return false;
         }
 
         Map<TypeElement, ArrayList<Element>> groups = groupElement(sets);
-        for (TypeElement typeElement : groups.keySet()) {
+        for (TypeElement originTypeElement : groups.keySet()) {
             // 创建class
-            TypeSpec.Builder typeSpecBuilder = makeTypeSpecBuilder(typeElement);
+            TypeSpec.Builder classBuilder = makeTypeSpecBuilder(originTypeElement);
             // 创建构造方法
-            MethodSpec.Builder constructorSpecBuilder = makeConstructor(typeElement);
+            MethodSpec.Builder constructorBuilder = makeConstructor(originTypeElement);
             // 生成注入代码
-            buildConstructorCode(constructorSpecBuilder, groups.get(typeElement));
+            buildConstructorCode(constructorBuilder, groups.get(originTypeElement));
             // 给类添加构造方法
-            typeSpecBuilder.addMethod(constructorSpecBuilder.build());
+            classBuilder.addMethod(constructorBuilder.build());
+            // 添加关联的类
+            classBuilder.addOriginatingElement(originTypeElement);
+
             // 输出 Java 文件
-            JavaFile file = JavaFile.builder(makePackageName(typeElement), typeSpecBuilder.build()).build();
+            TypeSpec classSpec = classBuilder.build();
+            JavaFile file = JavaFile.builder(makePackageName(originTypeElement), classSpec).build();
             try {
-                file.writeTo(this.processingEnv.getFiler());
+                Filer filer = this.processingEnv.getFiler();
+                file.writeTo(filer);
             } catch (IOException e) {
                 e.printStackTrace();
                 mMessager.printMessage(Diagnostic.Kind.NOTE, "InjectProcessor --> 文件生成失败");
@@ -135,7 +119,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
     /**
      * 生成如下代码
      * class XX_Inject{
-     * <p>
+     *
      * }
      */
     private TypeSpec.Builder makeTypeSpecBuilder(TypeElement typeElement) {
@@ -146,7 +130,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
     /**
      * 创建构造函数
      * public XX_Inject(XX target){
-     * <p>
+     *
      * }
      */
     private MethodSpec.Builder makeConstructor(TypeElement typeElement) {
@@ -167,11 +151,10 @@ public class ExtraInjectProcessor extends AbstractProcessor {
         return ((PackageElement) ele).getQualifiedName().toString();
     }
 
-
     private void buildConstructorCode(MethodSpec.Builder bindMethodBuilder, ArrayList<Element> elements) {
         /*
-        生成的语句模板,支持三种类型，1.基本类型 2.String 类型 3.Parcelable 类型
-        target.{fieldName} = getIntent().get{typeName}Extra();
+            生成的语句模板,支持三种类型，1.基本类型 2.String 类型 3.Parcelable 类型
+            target.{fieldName} = getIntent().get{typeName}Extra();
          */
         for (Element item : elements) {
             // 生成语句
@@ -184,7 +167,6 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                 // 使用默认值
             }
             statementBuilder.append("target.").append(fieldName).append(" = ").append(" target.getIntent().get");
-
             //属性类型
             TypeMirror fieldTypeMirror = item.asType();
             TypeName typeName = ClassName.get(fieldTypeMirror);
@@ -227,7 +209,6 @@ public class ExtraInjectProcessor extends AbstractProcessor {
             bindMethodBuilder.addStatement(statementBuilder.toString());
         }
     }
-
 
     /**
      * 根据注解所在的类来分组

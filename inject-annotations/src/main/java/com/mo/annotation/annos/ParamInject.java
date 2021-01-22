@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * 只能在Activity里面使用
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ParamInject {
     String value() default "";

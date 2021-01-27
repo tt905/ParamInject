@@ -34,7 +34,8 @@ android {
 
 //kapt {
 //    arguments {
-//        arg("AROUTER_MODULE_NAME", "myAnnotation")
+//        arg("MyParams", "测试参数")
+//        arg("MyParams2", "测试参数333333")
 //    }
 //}
 

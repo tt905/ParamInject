@@ -30,6 +30,8 @@ public class ParamActivity extends AppCompatActivity {
     @ParamInject("userModel")
     public UserModel userModel;
 
+    public AdEntity adEntity;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,6 +40,7 @@ public class ParamActivity extends AppCompatActivity {
 //        param1 = getIntent().getStringExtra("myParam");
 //        param1 = getIntent().getParcelableExtra()
 //        userModel = getIntent().getParcelableExtra("userModel");
+//        adEntity = (AdEntity) getIntent().getSerializableExtra("");
         Log.d("MLog", "param1:" + param1 + " param2:" + param2 + " userModel.name:" + this.userModel.name);
     }
 }

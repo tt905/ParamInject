@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -90,6 +91,11 @@ public class ExtraInjectProcessor extends AbstractProcessor {
 
         Map<TypeElement, ArrayList<Element>> groups = groupElement(sets);
         for (TypeElement originTypeElement : groups.keySet()) {
+            boolean result = InjectTools.checkActivityScope(typeUtils, originTypeElement);
+            if (!result) {
+                mMessager.printMessage(Diagnostic.Kind.WARNING, "Annotation { @ParamInject } should be use in Activity");
+                continue;
+            }
             // 创建class
             TypeSpec.Builder classBuilder = makeTypeSpecBuilder(originTypeElement);
             // 创建构造方法
@@ -119,7 +125,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
     /**
      * 生成如下代码
      * class XX_Inject{
-     *
+     * <p>
      * }
      */
     private TypeSpec.Builder makeTypeSpecBuilder(TypeElement typeElement) {
@@ -130,7 +136,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
     /**
      * 创建构造函数
      * public XX_Inject(XX target){
-     *
+     * <p>
      * }
      */
     private MethodSpec.Builder makeConstructor(TypeElement typeElement) {
@@ -174,7 +180,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                 // 基本类型
                 String name = typeName.toString();
                 String upName = InjectTools.upperFirstLatter(name);
-                System.out.println("Primitive typeName : " + name + " UpName:" + upName);
+//                System.out.println("Primitive typeName : " + name + " UpName:" + upName);
                 statementBuilder.append(upName).append("Extra(\"").append(paramKey).append("\",");
                 // 插入默认值
                 switch (fieldTypeMirror.getKind()) {
@@ -194,6 +200,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                         statementBuilder.append((byte) 0);
                         break;
                     default:
+                        mMessager.printMessage(Diagnostic.Kind.ERROR, "@ParamInject 还未支持的类型：" + name);
                         break;
                 }
                 statementBuilder.append(")");
@@ -202,7 +209,14 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                 if ("java.lang.String".equals(typeName.toString())) {
                     statementBuilder.append("StringExtra(\"").append(paramKey).append("\")");
                 } else {
-                    statementBuilder.append("ParcelableExtra(\"").append(paramKey).append("\")");
+                    TypeElement e = (TypeElement) typeUtils.asElement(fieldTypeMirror);
+                    List<? extends TypeMirror> list = e.getInterfaces();
+                    // 是否实现了 Parcelable 接口
+                    if (list.toString().contains("android.os.Parcelable")) {
+                        statementBuilder.append("ParcelableExtra(\"").append(paramKey).append("\")");
+                    } else {
+                        mMessager.printMessage(Diagnostic.Kind.ERROR, "使用 @ParamInject 的对象{" + typeName.toString() + "}要实现 Parcelable 接口");
+                    }
                 }
             }
 
@@ -229,7 +243,7 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                 logString.append(" { ").append(enclosingElement.getQualifiedName()).append(" } ");
             }
         }
-        mMessager.printMessage(Diagnostic.Kind.NOTE, "group: [ " + logString.toString() + " ]");
+        System.out.println("group: [ " + logString.toString() + " ]");
 
         return groups;
     }

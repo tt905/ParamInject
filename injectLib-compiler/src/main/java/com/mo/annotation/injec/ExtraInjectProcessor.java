@@ -199,6 +199,8 @@ public class ExtraInjectProcessor extends AbstractProcessor {
                     case BYTE:
                         statementBuilder.append((byte) 0);
                         break;
+                    case CHAR:
+                        statementBuilder.append('0');
                     default:
                         mMessager.printMessage(Diagnostic.Kind.ERROR, "@ParamInject 还未支持的类型：" + name);
                         break;
